@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -74,23 +75,36 @@ private const val ZHITU_PROJECT_PATCH_SCRIPT = """
     function updateImeLayout() {
         var input = document.getElementById('chat-input');
         var chatContainer = document.getElementById('chat-container');
-        var bottomBar = input ? input.closest('.absolute') : null;
+        var bottomBar = document.getElementById('zhitu-bottom-shell') || (input ? input.closest('.absolute') : null);
+        var root = document.documentElement;
         var viewport = window.visualViewport;
         var keyboardInset = 0;
+        var appHeight = Math.max(320, Math.round(window.innerHeight || (viewport && viewport.height) || 0));
 
         if (viewport) {
             keyboardInset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
         }
 
+        if (root && root.style) {
+            root.style.setProperty('--zhitu-app-height', appHeight + 'px');
+        }
+
         if (bottomBar) {
+            var bottomBarHeight = Math.ceil(bottomBar.getBoundingClientRect ? (bottomBar.getBoundingClientRect().height || 0) : 0);
+            var basePaddingBottom = Math.max(bottomBarHeight + 24, 128);
+            var extraPaddingBottom = keyboardInset > 0 ? keyboardInset + 24 : 0;
+            if (root && root.style) {
+                root.style.setProperty('--zhitu-bottom-bar-height', bottomBarHeight + 'px');
+                root.style.setProperty('--zhitu-chat-bottom-padding', (basePaddingBottom + extraPaddingBottom) + 'px');
+            }
             bottomBar.style.transition = 'transform 180ms ease-out';
             bottomBar.style.transform = keyboardInset > 0 ? 'translateY(-' + keyboardInset + 'px)' : 'translateY(0)';
+            bottomBar.style.bottom = '0';
         }
 
         if (chatContainer) {
-            var basePaddingBottom = 112;
-            var extraPaddingBottom = keyboardInset > 0 ? keyboardInset + 24 : 0;
-            chatContainer.style.paddingBottom = (basePaddingBottom + extraPaddingBottom) + 'px';
+            chatContainer.style.minHeight = '0';
+            chatContainer.style.paddingBottom = 'var(--zhitu-chat-bottom-padding)';
             if (document.activeElement === input) {
                 requestAnimationFrame(function () {
                     chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -889,6 +903,7 @@ fun TravelHubHtmlPage(
             state = webViewState,
             modifier = Modifier
                 .fillMaxSize()
+                .navigationBarsPadding()
                 .imePadding(),
         )
 

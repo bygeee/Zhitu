@@ -300,9 +300,25 @@
         @keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 10px rgba(16,185,129,0.4); } 50% { box-shadow: 0 0 20px rgba(16,185,129,0.8); } }
         @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
 
+        :root {
+            --zhitu-app-height: 100dvh;
+            --zhitu-bottom-inset: env(safe-area-inset-bottom, 0px);
+            --zhitu-bottom-bar-height: 8rem;
+            --zhitu-chat-bottom-padding: calc(var(--zhitu-bottom-bar-height) + var(--zhitu-bottom-inset) + 1.25rem);
+        }
+
+        html {
+            width: 100%;
+            height: var(--zhitu-app-height);
+            overflow: hidden;
+            background-color: #FAFAFA;
+        }
+
         body {
             margin: 0;
-            min-height: 100dvh;
+            width: 100%;
+            height: var(--zhitu-app-height);
+            min-height: var(--zhitu-app-height);
             overflow: hidden;
             background-color: #FAFAFA;
             display: block;
@@ -314,9 +330,9 @@
             position: fixed;
             inset: 0;
             width: 100vw;
-            height: 100dvh;
+            height: var(--zhitu-app-height);
             max-width: 100vw;
-            max-height: 100dvh;
+            max-height: var(--zhitu-app-height);
             background-color: #FAFAFA;
             overflow: hidden;
             border-radius: 0;
@@ -324,6 +340,16 @@
             border: none;
             display: flex;
             flex-direction: column;
+        }
+
+        #chat-container {
+            min-height: 0;
+            padding-bottom: var(--zhitu-chat-bottom-padding);
+        }
+
+        #zhitu-bottom-shell {
+            bottom: 0;
+            padding-bottom: var(--zhitu-bottom-inset);
         }
 
         /* Hide scrollbar but allow scroll */
@@ -662,7 +688,7 @@
         <main id="chat-container" class="flex-1 overflow-y-auto no-scrollbar p-5 pb-28 flex flex-col gap-5 relative z-10">
         </main>
         <!-- Composite Bottom Area: Quick Tabs + Input -->
-        <div class="absolute bottom-0 left-0 right-0 z-20 glass-panel border-t border-white/50">
+        <div id="zhitu-bottom-shell" class="absolute bottom-0 left-0 right-0 z-20 glass-panel border-t border-white/50">
             <div class="overflow-x-auto no-scrollbar flex gap-2 px-4 pt-3 pb-2">
                 <button class="quick-tab flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-gray-200 bg-white/80 text-gray-500 transition-all duration-200 hover:border-brand-green/40 hover:text-brand-green" data-tab="itinerary">
                     <i data-lucide="calendar" class="w-3.5 h-3.5 pointer-events-none"></i>
@@ -1246,27 +1272,34 @@
     function normalizeStaticLayout() {
         const body = document.body;
         const app = document.getElementById('app-container');
+        const root = document.documentElement;
+        const viewportHeight = Math.max(320, Math.round(window.innerHeight || (window.visualViewport && window.visualViewport.height) || 0));
 
         if (body && body.style) {
             body.style.margin = '0';
-            body.style.minHeight = '100dvh';
+            body.style.width = '100%';
+            body.style.height = 'var(--zhitu-app-height)';
+            body.style.minHeight = 'var(--zhitu-app-height)';
             body.style.backgroundColor = '#FAFAFA';
             body.style.display = 'block';
-            body.style.fontFamily = "'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif";
+            body.style.fontFamily = "system-ui, -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif";
             body.style.overflow = 'hidden';
         }
 
-        if (document.documentElement && document.documentElement.style) {
-            document.documentElement.style.backgroundColor = '#FAFAFA';
+        if (root && root.style) {
+            root.style.setProperty('--zhitu-app-height', viewportHeight + 'px');
+            root.style.backgroundColor = '#FAFAFA';
+            root.style.height = 'var(--zhitu-app-height)';
+            root.style.overflow = 'hidden';
         }
 
         if (app && app.style) {
             app.style.position = 'fixed';
             app.style.inset = '0';
             app.style.width = '100vw';
-            app.style.height = '100dvh';
+            app.style.height = 'var(--zhitu-app-height)';
             app.style.maxWidth = '100vw';
-            app.style.maxHeight = '100dvh';
+            app.style.maxHeight = 'var(--zhitu-app-height)';
             app.style.border = 'none';
             app.style.borderRadius = '0';
             app.style.boxShadow = 'none';
@@ -1282,8 +1315,20 @@
         }
 
         const chatContainer = document.getElementById('chat-container');
+        const bottomBar = document.getElementById('zhitu-bottom-shell');
+        const bottomBarHeight = bottomBar ? Math.ceil(bottomBar.getBoundingClientRect().height || 0) : 0;
+        const chatPaddingBottom = Math.max(bottomBarHeight + 24, 128);
+        if (root && root.style) {
+            root.style.setProperty('--zhitu-bottom-bar-height', bottomBarHeight + 'px');
+            root.style.setProperty('--zhitu-chat-bottom-padding', chatPaddingBottom + 'px');
+        }
+        if (bottomBar && bottomBar.style) {
+            bottomBar.style.bottom = '0';
+            bottomBar.style.paddingBottom = 'var(--zhitu-bottom-inset)';
+        }
         if (chatContainer && chatContainer.style) {
-            chatContainer.style.paddingBottom = '11rem';
+            chatContainer.style.minHeight = '0';
+            chatContainer.style.paddingBottom = 'var(--zhitu-chat-bottom-padding)';
         }
 
         const input = document.getElementById('chat-input');
